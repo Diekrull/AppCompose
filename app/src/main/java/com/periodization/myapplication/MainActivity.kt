@@ -1,10 +1,8 @@
 package com.periodization.myapplication
 
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,69 +14,40 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import com.periodization.myapplication.presentation.saludo.SaludoViewModel
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
         setContent {
             MaterialTheme {
-                AppNavigation()
+                val viewModel: SaludoViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                PantallaEntrada(viewModel)
             }
         }
     }
 }
 
-@Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = "entrada"
-    ) {
-        composable("entrada") {
-            PantallaEntrada(
-                onContinuar = { nombre ->
-                    val nombreSeguro = Uri.encode(nombre)
-                    navController.navigate("resultado/$nombreSeguro")
-                }
-            )
-        }
-
-        composable(
-            route = "resultado/{nombre}",
-            arguments = listOf(
-                navArgument("nombre") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val nombre = backStackEntry.arguments?.getString("nombre") ?: "Usuario"
-
-            PantallaResultado(
-                nombre = nombre,
-                onVolver = { navController.popBackStack() }
-            )
-        }
-    }
-}
 
 @Composable
 fun PantallaEntrada(
-    onContinuar: (String) -> Unit
+    viewModel: SaludoViewModel
 ) {
-    var nombre by remember { mutableStateOf("") }
+    val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold { innerPadding ->
         Column(
@@ -88,59 +57,38 @@ fun PantallaEntrada(
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center
         ) {
+
             OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text("Ingresa tu nombre") },
+                value = state.nombre,
+                onValueChange = { viewModel.onNombreChange(it) },
+                label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth()
             )
 
+            OutlinedTextField(
+                value = state.edad,
+                onValueChange = { viewModel.onEdadChange(it) },
+                label = { Text("Edad") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            )
+
             Button(
-                onClick = {
-                    if (nombre.trim().isEmpty()) {
-                        Toast.makeText(
-                            context,
-                            "Por favor ingresa tu nombre",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        onContinuar(nombre.trim())
-                    }
-                },
+                onClick = { viewModel.onContinuar() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
             ) {
                 Text("Continuar")
             }
-        }
-    }
-}
 
-@Composable
-fun PantallaResultado(
-    nombre: String,
-    onVolver: () -> Unit
-) {
-    Scaffold { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Hola, $nombre",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Button(
-                onClick = onVolver,
-                modifier = Modifier.padding(top = 20.dp)
-            ) {
-                Text("Volver")
+            if (state.mensaje.isNotEmpty()) {
+                Text(
+                    text = state.mensaje,
+                    modifier = Modifier.padding(top = 20.dp),
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
         }
     }
