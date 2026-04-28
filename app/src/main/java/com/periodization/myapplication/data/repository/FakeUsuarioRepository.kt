@@ -1,5 +1,6 @@
 package com.periodization.myapplication.data.repository
 
+import com.periodization.myapplication.domain.model.User
 import com.periodization.myapplication.domain.repository.UsuarioRepository
 
 /*Liskov Substitution Principle (LSP)
@@ -20,7 +21,7 @@ class FakeUsuarioRepository : UsuarioRepository {
 //EJ: Sustitución de Liskov Correcta : Devuelve un valor válido
 
 class FakeUsuarioRepository : UsuarioRepository {
-    override fun obtenerUsuario(): Usuario {
-        return Usuario("Fake", 0)
+    override fun obtenerUsuario(): User {
+        return User("Fake", 0)
     }
 }
